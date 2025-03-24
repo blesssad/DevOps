@@ -1,0 +1,47 @@
+services:
+  db:
+    image: postgres:16.3-alpine
+    container_name: petclinic_db
+    ports:
+      - "5432:5432"
+    environment:
+      - POSTGRES_PASSWORD=${POSTGRES_PASSWORD}
+      - POSTGRES_USER=${POSTGRES_USERNAME}
+      - POSTGRES_DB=${POSTGRES_DB}
+    volumes:
+      - db_data:/var/lib/postgresql/data
+    restart: always
+
+
+  app:
+    build:
+      context: .
+      dockerfile: docker/runtime.Dockerfile
+    image: petclinic_image
+    container_name: petclinic_app
+    depends_on:
+      - db
+    environment:
+      - POSTGRES_URL=${POSTGRES_URL}
+      - POSTGRES_USER=${POSTGRES_USERNAME}
+      - POSTGRES_PASS=${POSTGRES_PASSWORD}
+      - SPRING_PROFILES_ACTIVE=${SPRING_PROFILES_ACTIVE}
+      - SERVER_PORT=${SERVER_PORT}
+      - SERVER_SERVLET_CONTEXT_PATH=${SERVER_SERVLET_CONTEXT_PATH}
+      - SPRING_SQL_INIT_MODE=${SPRING_SQL_INIT_MODE}
+      - DATABASE=${POSTGRES_DB}
+    ports:
+      - "3000:3000"
+    volumes:
+      - logs:/app/logs
+      - app_data:/app
+      - maven_repo:/root/.m2
+    restart: always
+    user: "1000:1000"
+
+volumes:
+  db_data:
+  app_data:
+  maven_repo:
+  logs:
+    driver: local
