@@ -1,0 +1,73 @@
+version: '3.8'
+
+services:
+  backend:
+    image: my-backend:latest
+    build:
+      context: ./spring-backend
+      dockerfile: Dockerfile
+    env_file:
+      - db.env
+    environment:
+      - DB_HOST=db
+      - MYSQL_DATABASE=hobbie_db
+      - MYSQL_PORT=3306
+      - MYSQL_USER=test
+      - MYSQL_PASSWORD=test
+      - MYSQL_ROOT_PASSWORD=root
+
+    volumes:
+      - ./spring-backend/config:/app/config
+    depends_on:
+      - db
+    networks:
+      - app-network
+    user: root
+
+  frontend:
+    image: my-frontend:latest
+    build:
+      context: ./react-frontend
+      dockerfile: Dockerfile
+    env_file:
+      - frontend.env
+    volumes:
+      - ./react-frontend/config:/app/config
+    depends_on:
+      - backend
+    networks:
+      - app-network
+    user: root
+    ports:
+      - "80:80"
+
+  db:
+    image: mysql:8.0
+    restart: always
+    env_file:
+      - db.env
+    volumes:
+      - db-data:/var/lib/mysql
+    networks:
+      - app-network
+    user: root
+
+  nginx-proxy:
+    image: nginx:alpine
+    restart: always
+    volumes:
+      - ./nginx/nginx.conf:/etc/nginx/nginx.conf
+      - /var/cache/nginx:/var/cache/nginx
+    depends_on:
+      - frontend
+      - backend
+    networks:
+      - app-network
+    user: root
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  db-data:
